@@ -1,0 +1,27 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "ubuntu/focal64"
+  config.vm.hostname = "websrv"
+  config.vm.box_check_update = false
+  config.vm.network "private_network", ip: "10.0.0.1"
+  config.vm.network "forwarded_port", guest: 80, host: 8081
+  config.vm.provider "virtualbox" do |vb|
+    vb.name = "vm1"
+    vb.memory = "1024" # 1G
+    # Attach Disk
+    file_to_disk = "storagedisk01.vmdk"
+      unless File.exist?(file_to_disk)
+          vb.customize [ "createmedium", "disk", "--filename", "storagedisk01.vmdk", "--format", "vmdk", "--size", 1024 * 1 ]
+      end
+      vb.customize [ "storageattach", "vm1" , "--storagectl", "SCSI", "--port", "2", "--device", "0", "--type", "hdd", "--medium", file_to_disk] 
+  end
+
+  config.vm.provision "shell", path: "bootstrap.sh"
+
+  config.vm.provision "file", source: "./config/wordpress", destination: "/home/vagrant/wordpress"
+
+  config.vm.provision "shell", path: "install.sh"
+
+end
